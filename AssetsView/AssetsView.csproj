@@ -59,6 +59,9 @@
     <ApplicationIcon>av.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -73,6 +76,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AssetHelpers\AssetSorter.cs" />
+    <Compile Include="AssetHelpers\IEManager.cs" />
     <Compile Include="Structs\AssetDetails.cs" />
     <Compile Include="Structs\AssetIcon.cs" />
     <Compile Include="Structs\AssetNodeDetails.cs" />
@@ -84,6 +88,8 @@
     <Compile Include="Structs\SceneDetails.cs" />
     <Compile Include="Util\AssetUtils.cs" />
     <Compile Include="Util\CustomClass.cs" />
+    <Compile Include="Util\ExportUtils.cs" />
+    <Compile Include="Util\ImportUtils.cs" />
     <Compile Include="Util\ImprovedListView.cs">
       <SubType>Component</SubType>
     </Compile>
@@ -202,6 +208,7 @@
       <DependentUpon>TextureViewer.cs</DependentUpon>
     </EmbeddedResource>
     <None Include="app.manifest" />
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>

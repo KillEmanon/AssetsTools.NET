@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -13,6 +14,8 @@ namespace AssetsTools.NET
         public bool align;
         public bool hasValue;
         public int childrenCount;
+
+        //[JsonIgnore]
         public AssetTypeTemplateField[] children;
 
         ///public AssetTypeTemplateField()

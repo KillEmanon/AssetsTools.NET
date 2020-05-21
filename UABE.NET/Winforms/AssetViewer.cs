@@ -105,7 +105,7 @@ namespace UABE.NET.Winforms
             assetList.Items.RemoveAt(0); //remove blank item that's here for some reason*/
             assetsManager = new AssetsManagerLegacy();
             assetsManager.LoadAssets(assetStream, assetRootDir);
-            assetsManager.LoadClassFile(Path.Combine(Application.StartupPath, "cldb.dat"));
+            assetsManager.LoadClassFile(Path.Combine(Application.StartupPath, "classdata.tpk"));
             AssetsFileReader worker = new AssetsFileReader(assetStream);
             worker.bigEndian = false;
             foreach (AssetFileInfoEx afi in assetsManager.initialTable.assetFileInfo)
@@ -335,6 +335,16 @@ namespace UABE.NET.Winforms
                 dependencies = new Dependencies(assetName, assetsManager.initialFile);
             }
             dependencies.ShowDialog();
+        }
+
+        private void exportToolStripMenuItem_Click(object sender, System.EventArgs e)
+        {
+
+        }
+
+        private void importToolStripMenuItem_Click(object sender, System.EventArgs e)
+        {
+
         }
     }
 }

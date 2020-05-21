@@ -40,7 +40,14 @@ namespace AssetsTools.NET
                     }
                 } else
                 {
-                    assetFileInfoSet.curFileType = (uint)file.typeTree.unity5Types[assetFileInfoSet.curFileTypeOrIndex].classId;
+                    if (assetFileInfoSet.curFileTypeOrIndex < 0)
+                    {
+                        assetFileInfoSet.curFileType = 0x72;
+                    }
+                    else
+                    {
+                        assetFileInfoSet.curFileType = (uint)file.typeTree.unity5Types[assetFileInfoSet.curFileTypeOrIndex].classId;
+                    }
                 }
                 
                 assetFileInfo[i] = assetFileInfoSet;
