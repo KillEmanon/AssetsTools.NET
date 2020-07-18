@@ -14,6 +14,7 @@ namespace AssetsView.Util
 {
     public class ExportUtils
     {
+        public static long id;
 
         private static void DumpField(AssetTypeValueField field, ref StringBuilder stringBuilder, string header)
         {
@@ -35,16 +36,22 @@ namespace AssetsView.Util
                 {
                     sb.Append(" = ");
 
-                    if(field[i].value.type == EnumValueTypes.ValueType_String)
+                    if (field[i].value != null)
                     {
-                        sb.Append('"');
-                        sb.Append(field[i].value.AsString());
-                        sb.Append('"');
+                        if (field[i].value.type == EnumValueTypes.ValueType_String)
+                        {
+                            sb.Append('"');
+                            sb.Append(field[i].value.AsString().Replace("\n", "\\n").TrimEnd('\0'));
+                            sb.Append('"');
+                        }
+                        else
+                        {
+                            sb.Append(field[i].value.AsString());
+                        }
                     }
                     else
-                    {
-                        sb.Append(field[i].value.AsString());
-                    }
+                        Console.WriteLine($"这就离谱:{id}");
+
                     stringBuilder.AppendLine(sb.ToString());
                 }
             }
@@ -63,6 +70,7 @@ namespace AssetsView.Util
 
         public static void ExportAssets(long id)
         {
+            ExportUtils.id = id;
             string path = IEManager.DirctoryPath;
             string className;
             var targetBaseField = IEManager.GetField(id, out className);
@@ -72,15 +80,6 @@ namespace AssetsView.Util
             var stringBuilder = new StringBuilder();
             DumpField(targetBaseField, ref stringBuilder, "");
             content = stringBuilder.ToString();
-
-            //try
-            //{
-            //    content = JsonConvert.SerializeObject(targetBaseField);
-            //}
-            //catch(Exception e)
-            //{
-            //    Console.WriteLine(e.StackTrace);
-            //}
 
             WriteDumpFiles(className + id + ".txt", path, content);
         }

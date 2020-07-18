@@ -1,6 +1,7 @@
 ﻿using AssetsTools.NET;
 using AssetsTools.NET.Extra;
 using AssetsView.Util;
+using AssetsView.Winforms;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -18,6 +19,7 @@ namespace AssetsView.AssetHelpers
 
         private static string dirctoryPath;
         private static string assetsFileName;
+        private static string inputStr;
 
         public static void Init(AssetsManager assetsManager, AssetsFileInstance assetsFileInstance, string path)
         {
@@ -51,7 +53,7 @@ namespace AssetsView.AssetHelpers
             {
                 if (AssetUtils.AllDependenciesLoaded(helper, correctAti))
                 {
-                    className += $"--{GetClassName(helper, correctAti, targetBaseField)}--";
+                    className += $"--{GetClassName(helper, correctAti, targetBaseField)}--{targetBaseField[3].value.value.asString.TrimEnd('\0')}--";
                     string managedPath = Path.Combine(Path.GetDirectoryName(correctAti.path), "Managed");
                     if (Directory.Exists(managedPath))
                     {
@@ -65,6 +67,14 @@ namespace AssetsView.AssetHelpers
                 }
             }
             return targetBaseField;
+        }
+
+        public static string GetTypeName(long id)
+        {
+            AssetsManager helper = AssetsManager;
+            AssetsFileInstance correctAti = AssetsFileInstance;
+            AssetFileInfoEx info = correctAti.table.GetAssetInfo(id);
+            return AssetHelper.FindAssetClassByID(helper.classFile, info.curFileType).name.GetString(helper.classFile);
         }
 
         /// <summary>
@@ -88,6 +98,7 @@ namespace AssetsView.AssetHelpers
         public static AssetsFileInstance AssetsFileInstance { get => assetsFileInstance; set => assetsFileInstance = value; }
         public static string DirctoryPath { get => dirctoryPath; set => dirctoryPath = value; }
         public static string AssetsFileName { get => assetsFileName; set => assetsFileName = value; }
+        public static string InputStr { get => inputStr; set => inputStr = value; }
 
         private static string GetClassName(AssetsManager manager, AssetsFileInstance inst, AssetTypeValueField baseField)
         {

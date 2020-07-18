@@ -494,60 +494,7 @@ namespace AssetsView.Winforms
         /// <param name="e"></param>
         private void ImportToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            OpenFileDialog ofd = new OpenFileDialog();
-            ofd.Title = "选择目标Aseets";
-            string targetFileName = "";
-
-            if (ofd.ShowDialog() == DialogResult.OK)
-            {
-                if (currentFile == null)
-                    return;
-                if (assetList.SelectedCells.Count > 0)
-                {
-                    var selRow = assetList.SelectedRows[0];
-                    string typeName = (string)selRow.Cells[2].Value;
-                    if (typeName == "Folder")
-                    {
-                        string dirName = (string)selRow.Cells[1].Value;
-                        ChangeDirectory(dirName);
-                        return;
-                    }
-                    else
-                    {
-                        targetFileName = ofd.FileName;
-                    }
-                }
-            }
-
-            ofd = new OpenFileDialog();
-            ofd.Title = "选择要导入的文件/文件夹";
-            if (ofd.ShowDialog() == DialogResult.OK){
-                if (currentFile == null)
-                    return;
-                if (assetList.SelectedCells.Count > 0)
-                {
-                    var selRow = assetList.SelectedRows[0];
-                    string typeName = (string)selRow.Cells[2].Value;
-                    if (typeName == "Folder")
-                    {
-                        string dirName = (string)selRow.Cells[1].Value;
-                        ChangeDirectory(dirName);
-                    }
-                    else
-                    {
-                        if(!string.IsNullOrEmpty(fileIDTextBox.Text))
-                        {
-                            ImportUtils.ImportAssets(long.Parse(fileIDTextBox.Text) , ofd.FileName, targetFileName);
-                        }
-                        else
-                        {
-                            ImportUtils.ImportAssets((long)selRow.Cells[3].Value, ofd.FileName, targetFileName);
-                        }
-                        
-                        MessageBox.Show("导入成功");
-                    }
-                }
-            }
+           
         }
 
 
@@ -559,31 +506,7 @@ namespace AssetsView.Winforms
         /// <param name="e"></param>
         private void ExportToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (currentFile == null)
-                return;
-            if (assetList.SelectedCells.Count > 0)
-            {
-                var selRow = assetList.SelectedRows[0];
-                string typeName = (string)selRow.Cells[2].Value;
-                if (typeName == "Folder")
-                {
-                    string dirName = (string)selRow.Cells[1].Value;
-                    ChangeDirectory(dirName);
-                }
-                else
-                {
-                    if (!string.IsNullOrEmpty(fileIDTextBox.Text))
-                    {
-                        ExportAssets(long.Parse(fileIDTextBox.Text));
-                    }
-                    else
-                    {
-                        ExportAssets((long)selRow.Cells[3].Value);
-                    }
-
-                    MessageBox.Show("导入成功");
-                }
-            }
+           
         }
 
         private void ExportAssets(long id)
@@ -857,5 +780,163 @@ namespace AssetsView.Winforms
             string dirName = SelectFolderAndLoad();
             new AssetDataScanner(this, helper, dirName).Show();
         }
+
+        private void exportAllToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            var inst = IEManager.AssetsFileInstance;
+
+            for (long i = 1; i < inst.file.AssetCount + 1; i++)
+            {
+                string typeName = IEManager.GetTypeName(i);
+                if(typeName == "MonoBehaviour")
+                    ExportAssets(i);
+            }
+            MessageBox.Show("导出成功");
+        }
+
+        private void exportOneToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (currentFile == null)
+                return;
+            if (assetList.SelectedCells.Count > 0)
+            {
+                var selRow = assetList.SelectedRows[0];
+                string typeName = (string)selRow.Cells[2].Value;
+                if (typeName == "Folder")
+                {
+                    string dirName = (string)selRow.Cells[1].Value;
+                    ChangeDirectory(dirName);
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(fileIDTextBox.Text))
+                    {
+                        ExportAssets(long.Parse(fileIDTextBox.Text));
+                    }
+                    else
+                    {
+                        ExportAssets((long)selRow.Cells[3].Value);
+                    }
+
+                    MessageBox.Show("导出成功");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 导入整个文件夹的mono
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void imporDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            IEManager.InputStr = fileIDTextBox.Text;
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Title = "选择要覆盖的Aseets";
+            string targetFileName = "";
+
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                if (currentFile == null)
+                    return;
+                if (assetList.SelectedCells.Count > 0)
+                {
+                    var selRow = assetList.SelectedRows[0];
+                    string typeName = (string)selRow.Cells[2].Value;
+                    if (typeName == "Folder")
+                    {
+                        string dirName = (string)selRow.Cells[1].Value;
+                        ChangeDirectory(dirName);
+                        return;
+                    }
+                    else
+                    {
+                        targetFileName = ofd.FileName;
+                    }
+                }
+            }
+            else
+                return;
+
+            OpenFileDialog ofd2 = new OpenFileDialog
+            {
+                CheckFileExists = false,
+                FileName = "[选择文件夹]",
+                Title = "选择要导入的文件夹"
+            };
+            if (ofd2.ShowDialog() == DialogResult.OK)
+            {
+                string dirName = Path.GetDirectoryName(ofd2.FileName);
+                if (Directory.Exists(dirName))
+                {
+                    ImportUtils.ImportAssets(dirName, targetFileName);
+                    MessageBox.Show("导入成功");
+                }
+                else
+                {
+                    MessageBox.Show("文件夹不存在.", "Assets View");
+                }
+            }
+        }
+
+        /// <summary>
+        /// 导入单个mono文件
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        private void importFileToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            IEManager.InputStr = fileIDTextBox.Text;
+            OpenFileDialog ofd = new OpenFileDialog();
+            ofd.Title = "选择要覆盖的Aseets";
+            string targetFileName = "";
+
+            if (ofd.ShowDialog() == DialogResult.OK)
+            {
+                if (currentFile == null)
+                    return;
+                if (assetList.SelectedCells.Count > 0)
+                {
+                    var selRow = assetList.SelectedRows[0];
+                    string typeName = (string)selRow.Cells[2].Value;
+                    if (typeName == "Folder")
+                    {
+                        string dirName = (string)selRow.Cells[1].Value;
+                        ChangeDirectory(dirName);
+                        return;
+                    }
+                    else
+                    {
+                        targetFileName = ofd.FileName;
+                    }
+                }
+            }
+            else
+                return;
+
+            OpenFileDialog ofd2 = new OpenFileDialog
+            {
+                CheckFileExists = false,
+                FileName = "[选择文件]",
+                Title = "选择要导入的文件"
+            };
+            if (ofd2.ShowDialog() == DialogResult.OK)
+            {
+                if (assetList.SelectedCells.Count > 0)
+                {
+                    var selRow = assetList.SelectedRows[0];
+                    if (!string.IsNullOrEmpty(fileIDTextBox.Text))
+                    {
+                        ImportUtils.ImportAssets(long.Parse(fileIDTextBox.Text), ofd2.FileName, targetFileName);
+                    }
+                    else
+                    {
+                        ImportUtils.ImportAssets((long)selRow.Cells[3].Value, ofd2.FileName, targetFileName);
+                    }
+                    MessageBox.Show("导入成功");
+                }
+            }
+        }
+
     }
 }

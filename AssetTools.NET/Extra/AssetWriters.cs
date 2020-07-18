@@ -125,9 +125,8 @@ namespace AssetsTools.NET.Extra
         public static byte[] WriteToByteArray(this AssetTypeValueField valueField)
         {
             byte[] data;
-            UTF8Encoding utf8 = new UTF8Encoding(false);
             using (MemoryStream ms = new MemoryStream())
-            using (AssetsFileWriter w = new AssetsFileWriter(ms, utf8))
+            using (AssetsFileWriter w = new AssetsFileWriter(ms))
             {
                 w.bigEndian = false;
                 valueField.Write(w);
