@@ -80,7 +80,7 @@ namespace AssetsTools.NET
                         stringTableLen = 0,
                         stringTable = ""
                     };
-                    typeTree.unity5Types.Concat(new Type_0D[] { type });
+                    typeTree.unity5Types.Add(type);
                 }
             }
             typeTree.Write(writer, header.format);
@@ -115,7 +115,7 @@ namespace AssetsTools.NET
                 if (replacer != null)
                 {
                     currentReplacers.Remove(replacer);
-                    if (replacer.GetReplacementType() == AssetsReplacementType.AssetsReplacement_AddOrModify)
+                    if (replacer.GetReplacementType() == AssetsReplacementType.AddOrModify)
                     {
                         int classIndex;
                         if (replacer.GetMonoScriptID() == 0xFFFF)
@@ -133,7 +133,7 @@ namespace AssetsTools.NET
                             unknown1 = 0
                         };
                     }
-                    else if (replacer.GetReplacementType() == AssetsReplacementType.AssetsReplacement_Remove)
+                    else if (replacer.GetReplacementType() == AssetsReplacementType.Remove)
                     {
                         continue;
                     }
@@ -148,8 +148,8 @@ namespace AssetsTools.NET
             //-write new assets
             while (currentReplacers.Count > 0)
             {
-                AssetsReplacer replacer = currentReplacers.First();
-                if (replacer.GetReplacementType() == AssetsReplacementType.AssetsReplacement_AddOrModify)
+                AssetsReplacer replacer = currentReplacers[0];
+                if (replacer.GetReplacementType() == AssetsReplacementType.AddOrModify)
                 {
                     int classIndex;
                     if (replacer.GetMonoScriptID() == 0xFFFF)
@@ -193,7 +193,7 @@ namespace AssetsTools.NET
                 //writer.Write((byte)0); //unknownString length
             }
 
-            uint metadataSize = (uint)(writer.Position - header.GetSizeBytes());
+            uint metadataSize = (uint)(writer.Position - 0x13); //0x13 is header - "endianness byte"? (if that's what it even is)
 
             //-for padding only. if all initial data before assetData is more than 0x1000, this is skipped
             while (writer.Position < 0x1000/*header.offs_firstFile*/)
@@ -214,13 +214,13 @@ namespace AssetsTools.NET
                 AssetsReplacer replacer = replacers.FirstOrDefault(n => n.GetPathID() == info.index);
                 if (replacer != null)
                 {
-                    if (replacer.GetReplacementType() == AssetsReplacementType.AssetsReplacement_AddOrModify)
+                    if (replacer.GetReplacementType() == AssetsReplacementType.AddOrModify)
                     {
                         replacer.Write(writer);
                         if (i != assetInfos.Count - 1)
                             writer.Align8();
                     }
-                    else if (replacer.GetReplacementType() == AssetsReplacementType.AssetsReplacement_Remove)
+                    else if (replacer.GetReplacementType() == AssetsReplacementType.Remove)
                     {
                         continue;
                     }
