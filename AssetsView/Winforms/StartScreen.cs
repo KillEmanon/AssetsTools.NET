@@ -511,7 +511,16 @@ namespace AssetsView.Winforms
 
         private void ExportAssets(long id)
         {
-            ExportUtils.ExportAssets(id);
+            try
+            {
+                ExportUtils.ExportAssets(id);
+
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("path id:" + id);
+                Console.WriteLine(e.Message);
+            }
         }
 
         private void ImportAssets()

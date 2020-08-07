@@ -37,7 +37,8 @@ namespace AssetsView.Util
 					//if (i >= int.Parse(arr[0]) && i <= int.Parse(arr[1])) continue;
 
 					var splitArr = Path.GetFileNameWithoutExtension(files[i]).Split(new string[] { "--" }, StringSplitOptions.None);
-					var temp = GenReplacerFromMemory(long.Parse(splitArr[3]), files[i]);
+                    string name = splitArr[3];
+                    var temp = GenReplacerFromMemory(long.Parse(splitArr[3]), files[i]);
 					if(temp != null) replList.Add(temp);
 				}
 
@@ -149,13 +150,16 @@ namespace AssetsView.Util
                 else
                 {
 					lines++;
-					//field[i].value.type = StringToEnum(fieldStr[0]);		//可以改变字段类型,是否有必要还是个未知数
-					//用于针对TypeNull
-					if (fieldStr.Length >= 4)
-						field[i].value.Set(fieldStr[3]);
-					else
-						return false;
-				}
+                    //field[i].value.type = StringToEnum(fieldStr[0]);		//可以改变字段类型,是否有必要还是个未知数
+                    //用于针对TypeNull
+                    if (fieldStr.Length >= 4)
+                        field[i].value.Set(fieldStr[3]);
+                    else
+                    {
+                        continue;
+                        //return false;
+                    }
+                }
             }
 			return true;
         }

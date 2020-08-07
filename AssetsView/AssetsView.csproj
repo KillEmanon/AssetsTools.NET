@@ -77,6 +77,9 @@
   <ItemGroup>
     <Compile Include="AssetHelpers\AssetSorter.cs" />
     <Compile Include="AssetHelpers\IEManager.cs" />
+    <Compile Include="Plurally\Localization\ILocalization.cs" />
+    <Compile Include="Plurally\Localization\LocaleEN.cs" />
+    <Compile Include="Plurally\Pluralizer.cs" />
     <Compile Include="Structs\AssetDetails.cs" />
     <Compile Include="Structs\AssetIcon.cs" />
     <Compile Include="Structs\AssetNodeDetails.cs" />
