@@ -60,7 +60,7 @@ namespace AssetsView.AssetHelpers
             {
                 if (AssetUtils.AllDependenciesLoaded(helper, correctAti))
                 {
-                    className += $"--{GetClassName(helper, correctAti, targetBaseField)}--{targetBaseField[3].value.value.asString.TrimEnd('\0')}--";
+                    className += $"--{GetClassName(helper, correctAti, targetBaseField)}--{targetBaseField[3].value.value.asString.ToString().TrimEnd('\0')}--";
                     string managedPath = Path.Combine(Path.GetDirectoryName(correctAti.path), "Managed");
                     if (Directory.Exists(managedPath))
                     {
