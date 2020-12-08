@@ -25,6 +25,7 @@ namespace AssetsView.Winforms
         private FSDirectory rootDir;
         private FSDirectory currentDir;
         private bool rsrcDataAdded;
+        private PPtrMap pptrMap;
 
         public StartScreen()
         {
@@ -110,6 +111,7 @@ namespace AssetsView.Winforms
             if (openFile.selection > -1)
             {
                 AssetBundleFile bundleFile = openFile.file;
+                BundleFileInstance bundleInst = openFile.inst;
                 List<byte[]> files = BundleHelper.LoadAllAssetsDataFromBundle(bundleFile);
                 if (files.Count > 0)
                 {
@@ -119,12 +121,15 @@ namespace AssetsView.Winforms
                         {
                             MemoryStream stream = new MemoryStream(files[i]);
                             string name = bundleFile.bundleInf6.dirInf[i].name;
-                            helper.LoadAssetsFile(stream, name, openFile.selection == 1);
+                            AssetsFileInstance inst = helper.LoadAssetsFile(stream, name, openFile.selection == 1);
+                            inst.parentBundle = bundleInst;
                         }
                     }
                     MemoryStream mainStream = new MemoryStream(files[0]);
                     string mainName = bundleFile.bundleInf6.dirInf[0].name;
-                    LoadMainAssetsFile(helper.LoadAssetsFile(mainStream, mainName, openFile.selection == 1));
+                    AssetsFileInstance mainInst = helper.LoadAssetsFile(mainStream, mainName, openFile.selection == 1);
+                    mainInst.parentBundle = bundleInst;
+                    LoadMainAssetsFile(mainInst);
                 }
                 else
                 {
@@ -209,7 +214,7 @@ namespace AssetsView.Winforms
                 ClassDatabaseType type = AssetHelper.FindAssetClassByID(helper.classFile, info.curFileType);
                 if (type.name.GetString(helper.classFile) == "ResourceManager")
                 {
-                    AssetTypeInstance inst = helper.GetATI(ggm.file, info);
+                    AssetTypeInstance inst = helper.GetTypeInstance(ggm.file, info);
                     AssetTypeValueField baseField = inst.GetBaseField();
                     AssetTypeValueField m_Container = baseField.Get("m_Container").Get("Array");
                     List<AssetDetails> assets = new List<AssetDetails>();
@@ -459,10 +464,38 @@ namespace AssetsView.Winforms
             {
                 var selRow = assetList.SelectedRows[0];
                 AssetFileInfoEx info = currentFile.table.GetAssetInfo((long)selRow.Cells[3].Value);
-                AssetTypeValueField baseField = helper.GetATI(currentFile.file, info).GetBaseField();
+                AssetTypeValueField baseField = helper.GetTypeInstance(currentFile.file, info).GetBaseField();
 
                 TextureViewer texView = new TextureViewer(currentFile, baseField);
-                texView.ShowDialog();
+                texView.Show();
+            }
+        }
+
+        private void xRefsToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (currentFile == null)
+                return;
+            if (assetList.SelectedCells.Count > 0)
+            {
+                var selRow = assetList.SelectedRows[0];
+                long pathId = (long)selRow.Cells[3].Value;
+                string assetDir = Path.GetDirectoryName(currentFile.path);
+
+                if (pptrMap == null)
+                {
+                    string avpmFilePath = Path.Combine(assetDir, "avpm.dat");
+                    if (File.Exists(avpmFilePath))
+                    {
+                        pptrMap = new PPtrMap(new BinaryReader(File.OpenRead(avpmFilePath)));
+                    }
+                    else
+                    {
+                        MessageBox.Show("avpm.dat file does not exist.\nTry running Global Search -> PPtr.", "Assets View");
+                        return;
+                    }
+                }
+                XRefsDialog xrefs = new XRefsDialog(this, helper, assetDir, pptrMap, new AssetID(currentFile.name, pathId));
+                xrefs.Show();
             }
         }
 
@@ -494,7 +527,7 @@ namespace AssetsView.Winforms
         /// <param name="e"></param>
         private void ImportToolStripMenuItem_Click(object sender, EventArgs e)
         {
-           
+
         }
 
 
@@ -506,7 +539,7 @@ namespace AssetsView.Winforms
         /// <param name="e"></param>
         private void ExportToolStripMenuItem_Click(object sender, EventArgs e)
         {
-           
+
         }
 
         private void ExportAssets(long id)
@@ -539,60 +572,8 @@ namespace AssetsView.Winforms
 
         public void OpenAsset(long id)
         {
-            ClassDatabaseFile classFile = helper.classFile;
-            AssetsFileInstance correctAti = currentFile;
-            AssetFileInfoEx info = correctAti.table.GetAssetInfo(id);
-            //todo this won't work for assets with typetrees
-            ClassDatabaseType classType = AssetHelper.FindAssetClassByID(classFile, info.curFileType);
-            string typeName = classType.name.GetString(classFile);
-            bool hasGameobjectField = classType.fields.Any(f => f.fieldName.GetString(classFile) == "m_GameObject");
-            bool parentPointerNull = false;
-            if (typeName != "GameObject" && hasGameobjectField)
-            {
-                //get gameobject parent
-                AssetTypeValueField componentBaseField = helper.GetATI(correctAti.file, info).GetBaseField();
-                AssetFileInfoEx newInfo = helper.GetExtAsset(correctAti, componentBaseField["m_GameObject"], true).info;
-                if (newInfo != null && newInfo.index != 0)
-                {
-                    info = newInfo;
-                }
-                else
-                {
-                    parentPointerNull = true;
-                }
-            }
-            if ((typeName == "GameObject" || hasGameobjectField) && !parentPointerNull)
-            {
-                AssetTypeValueField baseField = helper.GetATI(correctAti.file, info).GetBaseField();
-
-                AssetTypeValueField transformPtr = baseField["m_Component"]["Array"][0].GetLastChild();
-                AssetTypeValueField transform = helper.GetExtAsset(correctAti, transformPtr).instance.GetBaseField();
-                baseField = GetRootTransform(helper, currentFile, transform);
-                AssetTypeValueField gameObjectPtr = baseField["m_GameObject"];
-                AssetTypeValueField gameObject = helper.GetExtAsset(correctAti, gameObjectPtr).instance.GetBaseField();
-                GameObjectViewer view = new GameObjectViewer(helper, correctAti, gameObject, info.index, id);
-                view.Show();
-            }
-            else
-            {
-                AssetTypeValueField baseField = helper.GetATI(correctAti.file, info).GetBaseField();
-                GameObjectViewer view = new GameObjectViewer(helper, correctAti, baseField, info);
-                view.Show();
-            }
-        }
-
-        public static AssetTypeValueField GetRootTransform(AssetsManager helper, AssetsFileInstance currentFile, AssetTypeValueField transform)
-        {
-            AssetTypeValueField fatherPtr = transform["m_Father"];
-            if (fatherPtr["m_PathID"].GetValue().AsInt64() != 0)
-            {
-                AssetTypeValueField father = helper.GetExtAsset(currentFile, fatherPtr).instance.GetBaseField();
-                return GetRootTransform(helper, currentFile, father);
-            }
-            else
-            {
-                return transform;
-            }
+            GameObjectViewer view = new GameObjectViewer(helper, currentFile, id);
+            view.Show();
         }
 
         private void RecurseForResourcesInfo(FSDirectory dir, AssetsFileInstance afi)
@@ -945,6 +926,12 @@ namespace AssetsView.Winforms
                     MessageBox.Show("导入成功");
                 }
             }
+        }
+
+        private void pptrToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            string dirName = SelectFolderAndLoad();
+            new PPtrScanner(helper, dirName).Show();
         }
 
     }

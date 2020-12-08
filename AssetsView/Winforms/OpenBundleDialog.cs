@@ -99,10 +99,11 @@ namespace AssetsView.Winforms
                     stream.Position = 0;
                     file = new AssetBundleFile();
                     file.Read(new AssetsFileReader(stream), false);
+                    inst.file = file;
                 }
                 catch (Exception ex)
                 {
-                    error = ex.Message;
+                    error = ex.ToString();
                 }
             };
             bw.RunWorkerCompleted += delegate
