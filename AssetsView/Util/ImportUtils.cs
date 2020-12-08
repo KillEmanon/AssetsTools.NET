@@ -2,9 +2,11 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using System.Xml;
 using AssetsTools.NET;
 using AssetsTools.NET.Extra;
 using AssetsView.AssetHelpers;
@@ -37,8 +39,14 @@ namespace AssetsView.Util
 					//if (i >= int.Parse(arr[0]) && i <= int.Parse(arr[1])) continue;
 
 					var splitArr = Path.GetFileNameWithoutExtension(files[i]).Split(new string[] { "--" }, StringSplitOptions.None);
-                    string name = splitArr[3];
-                    var temp = GenReplacerFromMemory(long.Parse(splitArr[3]), files[i]);
+					string name;
+
+					if (splitArr.Length == 2)
+						name = splitArr[1];
+					else
+						name = splitArr[3];
+
+					var temp = GenReplacerFromMemory(long.Parse(name), files[i]);
 					if(temp != null) replList.Add(temp);
 				}
 
@@ -63,7 +71,7 @@ namespace AssetsView.Util
 		{
 			AssetTypeValueField baseField;
 
-			int lines = 0;
+			
 			UTF8Encoding utf8 = new UTF8Encoding(false);
 			string[] contents = File.ReadAllLines(filedFileName, utf8);
 			//TODO 过长的数据库类现在先不处理
@@ -74,8 +82,16 @@ namespace AssetsView.Util
 				return null;
 			}
 
+			int lines = 0;
 			baseField = IEManager.GetField(path_id);
-			
+
+			if(baseField == null)
+			{
+				Console.WriteLine($"处理失败,在导入中找不到对应id--{path_id}--{filedFileName}");
+				File.AppendAllLines(logPath, new string[] { $"处理失败,在导入中找不到对应id--{path_id}--{filedFileName}" });
+				return null;
+			}
+
 			var sucess = ChangeField(baseField, contents, ref lines);
 			if (!sucess)
 			{
@@ -83,6 +99,17 @@ namespace AssetsView.Util
 				File.AppendAllLines(logPath, new string[] { $"处理失败,有null值--{path_id}--{filedFileName}" });
 				return null;
 			}
+
+			////试试无中生有
+			//int lines = 0;
+			//int count = CalculationChildrenCount(contents, -1, -1);
+			//baseField = new AssetTypeValueField();
+			//baseField.children = new AssetTypeValueField[count];
+			//baseField.childrenCount = count;
+			//baseField.templateField = new AssetTypeTemplateField();
+			//baseField.templateField.children = new AssetTypeTemplateField[count];
+			//baseField.templateField.childrenCount = count;
+			//CreateField(baseField, contents, ref lines, count);
 
 			var inst = IEManager.AssetsFileInstance;
 			var inf = inst.table.GetAssetInfo(path_id);
@@ -100,49 +127,13 @@ namespace AssetsView.Util
 
                 string[] fieldStr = str.Split(new char[]{' '}, StringSplitOptions.RemoveEmptyEntries);
 
-                field[i].templateField.type = fieldStr[0];
-                field[i].templateField.name = fieldStr[1];
+				//数据预处理
+				fieldStr = ValueHandler(fieldStr, str);
 
-				//某个搞事的类型,简直了
-				if(fieldStr[0] == "unsigned")
-				{
-					field[i].templateField.type = $"{fieldStr[0]} {fieldStr[1]}";
-					field[i].templateField.name = fieldStr[2];
-					fieldStr[3] = fieldStr[4];
-				}
-				
-				//字符串的特殊处理
-				//TODO 多行拼接有bug需要修复
-				if (fieldStr[0] == "string")
-				{
-					string replace = fieldStr[0] + " " + fieldStr[1] + " = ";
-					fieldStr[3] = str.Replace(replace, "").Trim().Replace("\"", "").Replace("\\n", "\n");
+				field[i].templateField.type = fieldStr[0];
+				field[i].templateField.name = fieldStr[1];
 
-					//value = value.Substring(1, value.Length - 1);
-					////不是单行字符串需要追踪全部行数
-					//if (str.Last() != '"')
-					//{
-					//	lines++;
-					//	//还可能存在字符串内自带"的情况,先不考虑,不出问题就不处理,以"结尾不出意外应该是没问题的
-					//	while (contents[lines] == string.Empty || contents[lines].Last() != ('"'))
-					//	{
-					//		lines++;
-					//		value += "\n" + contents[lines];
-					//	}
-					//}
-					//value = value.Substring(0, value.Length - 1);
-					//fieldStr[3] = value;
-				}
-				//bool的特殊处理
-				if(fieldStr[0] == "bool")
-				{
-					if (fieldStr[3] == "true")
-						fieldStr[3] = "1";
-					else
-						fieldStr[3] = "0";
-				}
-
-                if (field[i].childrenCount >= 1)
+				if (field[i].childrenCount >= 1)
                 {
 					lines++;
                     ChangeField(field[i], contents, ref lines);
@@ -164,26 +155,166 @@ namespace AssetsView.Util
 			return true;
         }
 
-		public static EnumValueTypes StringToEnum(string type)
+		/// <summary>
+		/// 无中生有一个Field
+		/// </summary>
+		/// <param name="field"></param>
+		/// <param name="contents"></param>
+		/// <param name="lines"></param>
+		public static void CreateField(AssetTypeValueField field, string[] contents, ref int lines, int count)
 		{
-			switch (type)
+			for (int i = 0; i < count; i++)
 			{
-				case "int":
-					return EnumValueTypes.ValueType_Int32;
-				case "UInt8":
-					return EnumValueTypes.ValueType_UInt8;
-				case "SInt64":
-					return EnumValueTypes.ValueType_Int64;
-				case "float":
-					return EnumValueTypes.ValueType_Float;
-				case "bool":
-					return EnumValueTypes.ValueType_Bool;
-				case "string":
-					return EnumValueTypes.ValueType_String;
-				default:
-					Console.WriteLine(type);
-					throw new Exception(type);
+				//子项
+				int subCount = CalculationChildrenCount(contents, lines);
+
+				string str = contents[lines];
+
+				string[] fieldStr = str.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+				//预处理字符串内容
+				fieldStr = ValueHandler(fieldStr, str);
+
+				//是否是数组
+				bool isArray = fieldStr[0] == "Array";
+				bool hasSub = subCount > 0;
+				bool hasValue = subCount == 0 && !isArray;
+
+				//格式类
+				AssetTypeTemplateField tempField = new AssetTypeTemplateField();
+				tempField.type = fieldStr[0];
+				tempField.name = fieldStr[1];
+				tempField.isArray = isArray;
+				tempField.valueType = AssetTypeValueField.GetValueTypeByTypeName(fieldStr[0]);
+				tempField.align = false;
+				tempField.hasValue = hasValue;
+
+				if (isArray)
+				{
+					tempField.children = new AssetTypeTemplateField[2];
+					tempField.childrenCount = 2;
+					tempField.children[0] = new AssetTypeTemplateField();
+					tempField.children[0].hasValue = true;
+					tempField.children[0].name = "size";
+					tempField.children[0].type = "int";
+					tempField.children[0].valueType = EnumValueTypes.ValueType_Int32;
+				}
+				else
+				{
+					tempField.children = new AssetTypeTemplateField[subCount];
+					tempField.childrenCount = subCount;
+				}
+
+				//承载类
+				AssetTypeValueField newField = new AssetTypeValueField();
+				newField.templateField = tempField;
+				newField.childrenCount = subCount;
+				newField.children = new AssetTypeValueField[subCount];
+
+				if (isArray)
+				{
+					newField.value = new AssetTypeValue(EnumValueTypes.ValueType_Int32, subCount);
+				}
+				else if (!hasSub)
+				{
+					newField.value = new AssetTypeValue(tempField.valueType, fieldStr[3]);
+				}
+				else
+				{
+					newField.value = null;
+				}
+
+				lines++;
+
+				//套娃操作
+				if (hasSub)
+				{
+					CreateField(newField, contents, ref lines, subCount);
+				}
+
+				//补充信息给父节点
+				field.children[i] = newField;
+
+				//数组的模板类有特殊处理
+				if (field.templateField.isArray && i == 0)
+					field.templateField.children[1] = tempField;
+				else
+					field.templateField.children[i] = tempField;
 			}
+		}
+
+		/// <summary>
+		///	根据数据类型进行的预先处理,跟导出规则有关
+		/// </summary>
+		/// <param name="type"></param>
+		/// <param name="value"></param>
+		/// <returns></returns>
+		public static string[] ValueHandler(string[] fieldStr, string lineStr)
+		{
+			//某个搞事的类型,简直了
+			if (fieldStr[0] == "unsigned")
+			{
+				fieldStr[0] = $"{fieldStr[0]} {fieldStr[1]}";
+				fieldStr[1] = fieldStr[2];
+				fieldStr[3] = fieldStr[4];
+			}
+
+			//字符串的特殊处理,还原
+			if (fieldStr[0] == "string")
+			{
+				string replace = fieldStr[0] + " " + fieldStr[1] + " = ";
+				fieldStr[3] = lineStr.Replace(replace, "").Trim().Replace("\"", "").Replace("\\n", "\n");
+			}
+			//bool的特殊处理
+			if (fieldStr[0] == "bool")
+			{
+				if (fieldStr[3] == "true")
+					fieldStr[3] = "1";
+				else
+					fieldStr[3] = "0";
+			}
+
+			return fieldStr;
+		}
+
+		public static int CalculationChildrenCount(string[] content, int start)
+		{
+			int origin_num = CalculationSpace(content[start]);
+			return CalculationChildrenCount(content, start, origin_num);
+		}
+
+		public static int CalculationChildrenCount(string[] content, int start, int origin_num)
+		{
+			int count = 0;
+			int p = start + 1;
+			while (p < content.Length)
+			{
+				int num = CalculationSpace(content[p]);
+				if(num == origin_num + 1)
+				{
+					count++;
+				}
+				else if(num < origin_num + 1)
+				{
+					break;
+				}
+				p++;
+			}
+			return count;
+		}
+
+		/// <summary>
+		/// 计算字符串前置空格数量
+		/// </summary>
+		/// <returns></returns>
+		public static int CalculationSpace(string str)
+		{
+			int i = 0;
+			while(i < str.Length && char.IsWhiteSpace(str[i]))
+			{
+				i++;
+			}
+			return i;
 		}
 
 	}

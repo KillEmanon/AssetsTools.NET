@@ -43,6 +43,13 @@ namespace AssetsView.AssetHelpers
             ClassDatabaseFile classFile = helper.classFile;
             AssetsFileInstance correctAti = AssetsFileInstance;
             AssetFileInfoEx info = correctAti.table.GetAssetInfo(id);
+
+            if(info == null)
+            {
+                Console.WriteLine($"path_id:{id} is not found,maybe in other file");
+                return null;
+            }
+
             ClassDatabaseType classType = AssetHelper.FindAssetClassByID(classFile, info.curFileType);
             string typeName = classType.name.GetString(classFile);
             AssetTypeValueField baseField = helper.GetATI(correctAti.file, info).GetBaseField();
@@ -65,6 +72,10 @@ namespace AssetsView.AssetHelpers
                     MessageBox.Show("Can't display MonoBehaviour data until dependencies are loaded", "Assets View");
                     return null;
                 }
+            }
+            else
+            {
+                className += "--";
             }
             return targetBaseField;
         }
