@@ -127,8 +127,17 @@ namespace AssetsTools.NET.Extra
                 else if (fieldType.FullName == "System.Collections.Generic.List`1")
                 {
                     fieldType = ((GenericInstanceType)fieldDef.FieldType).GenericArguments[0].Resolve();
+                    ////修改
+                    //if (fieldType == null)
+                    //{
+
+                    //}
+                    //fieldTypeName = fieldType.Name;
+                    //isArrayOrList = true;
+                    //修改前
                     fieldTypeName = fieldType.Name;
                     isArrayOrList = true;
+
                 }
 
                 field.name = fieldDef.Name;

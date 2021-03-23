@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 
 namespace AssetsTools.NET
 {
@@ -7,80 +8,89 @@ namespace AssetsTools.NET
         //bool freeValue;
         public EnumValueTypes type;
 
+        [JsonObject(MemberSerialization.OptIn)]
         public struct ValueTypes
         {
-            private object value;
+            [JsonProperty]
+            public object value;
+
             public AssetTypeArray asArray
             {
                 get { return (AssetTypeArray)value; }
                 set { this.value = value; }
             }
+
             public AssetTypeByteArray asByteArray
             {
                 get { return (AssetTypeByteArray)value; }
                 set { this.value = value; }
             }
+
             public bool asBool
             {
                 get { return (bool)value; }
                 set { this.value = value; }
             }
+
             public sbyte asInt8
             {
-                get { return (sbyte)value; }
+                get { return sbyte.Parse(value.ToString()); }
                 set { this.value = value; }
             }
+
             public byte asUInt8
             {
-                get { return (byte)value; }
+                get { return byte.Parse(value.ToString()); }
                 set { this.value = value; }
             }
+
             public short asInt16
             {
-                get { return (short)value; }
+                get { return short.Parse(value.ToString()); }
                 set { this.value = value; }
             }
             public ushort asUInt16
             {
-                get { return (ushort)value; }
+                get { return ushort.Parse(value.ToString()); }
                 set { this.value = value; }
             }
             public int asInt32
             {
-                get { return (int)value; }
+                get { return int.Parse(value.ToString()); }
                 set { this.value = value; }
             }
             public uint asUInt32
             {
-                get { return (uint)value; }
+                get { return uint.Parse(value.ToString()); }
                 set { this.value = value; }
             }
             public long asInt64
             {
-                get { return (long)value; }
+                get { return long.Parse(value.ToString()); }
                 set { this.value = value; }
             }
             public ulong asUInt64
             {
-                get { return (ulong)value; }
+                get { return ulong.Parse(value.ToString()); }
                 set { this.value = value; }
             }
             public float asFloat
             {
-                get { return (float)value; }
+                get { return float.Parse(value.ToString()); }
                 set { this.value = value; }
             }
             public double asDouble
             {
-                get { return (double)value; }
+                get { return double.Parse(value.ToString()); }
                 set { this.value = value; }
             }
             public string asString
             {
-                get { return (string)value; }
+                get { return value.ToString(); }
                 set { this.value = value; }
             }
         }
+
         public ValueTypes value = new ValueTypes();
 
         //Creates an AssetTypeValue.
