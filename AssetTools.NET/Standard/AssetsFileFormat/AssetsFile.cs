@@ -56,8 +56,6 @@ namespace AssetsTools.NET
             dependencies.Read(reader);
         }
 
-        //set fileID to -1 if all replacers are for this .assets file but don't have the fileID set to the same one
-        //typeMeta is used to add the type information (hash and type fields) for format >= 0x10 if necessary
         public void Write(AssetsFileWriter writer, ulong filePos, List<AssetsReplacer> replacers, uint fileID, ClassDatabaseFile typeMeta = null)
         {
             header.Write(writer);
@@ -194,19 +192,29 @@ namespace AssetsTools.NET
             }
 
             uint metadataSize = (uint)(writer.Position - 0x13); //0x13 is header - "endianness byte"? (if that's what it even is)
-
-            //-for padding only. if all initial data before assetData is more than 0x1000, this is skipped
-            while (writer.Position < 0x1000/*header.offs_firstFile*/)
+            if (header.format >= 0x16)
             {
-                writer.Write((byte)0x00);
+                //remove larger variation fields as well
+                metadataSize -= 0x1c;
             }
 
-            if (writer.Position % 16 == 0)
-                writer.Position += 16;
+            //-for padding only. if all initial data before assetData is more than 0x1000, this is skipped
+            if (writer.Position < 0x1000)
+            {
+                while (writer.Position < 0x1000)
+                {
+                    writer.Write((byte)0x00);
+                }
+            }
             else
-                writer.Align16();
+            {
+                if (writer.Position % 16 == 0)
+                    writer.Position += 16;
+                else
+                    writer.Align16();
+            }
 
-            uint offs_firstFile = (uint)writer.Position;
+            long offs_firstFile = writer.Position;
 
             for (int i = 0; i < assetInfos.Count; i++)
             {
@@ -247,7 +255,7 @@ namespace AssetsTools.NET
 
             writer.Position = 0;
             header.metadataSize = metadataSize;
-            header.fileSize = (uint)fileSizeMarker;
+            header.fileSize = fileSizeMarker;
             header.Write(writer);
         }
 

@@ -17,6 +17,7 @@ namespace AssetsTools.NET.Extra
         public List<AssetsFileInstance> files = new List<AssetsFileInstance>();
         public List<BundleFileInstance> bundles = new List<BundleFileInstance>();
         private Dictionary<uint, AssetTypeTemplateField> templateFieldCache = new Dictionary<uint, AssetTypeTemplateField>();
+        private Dictionary<string, AssetTypeTemplateField> monoTemplateFieldCache = new Dictionary<string, AssetTypeTemplateField>();
 
         public AssetsFileInstance LoadAssetsFile(Stream stream, string path, bool loadDeps, string root = "")
         {
@@ -153,10 +154,10 @@ namespace AssetsTools.NET.Extra
             }
             else if (fileId != 0)
             {
-                AssetsFileInstance dep = relativeTo.dependencies[fileId - 1];
+                AssetsFileInstance dep = relativeTo.GetDependency(this, fileId - 1);
                 ext.info = dep.table.GetAssetInfo(pathId);
                 if (!onlyGetInfo)
-                    ext.instance = GetATI(dep.file, ext.info, forceFromCldb);
+                    ext.instance = GetTypeInstance(dep.file, ext.info, forceFromCldb);
                 else
                     ext.instance = null;
                 ext.file = dep;
@@ -165,7 +166,7 @@ namespace AssetsTools.NET.Extra
             {
                 ext.info = relativeTo.table.GetAssetInfo(pathId);
                 if (!onlyGetInfo)
-                    ext.instance = GetATI(relativeTo.file, ext.info, forceFromCldb);
+                    ext.instance = GetTypeInstance(relativeTo.file, ext.info, forceFromCldb);
                 else
                     ext.instance = null;
                 ext.file = relativeTo;
@@ -180,7 +181,25 @@ namespace AssetsTools.NET.Extra
             return GetExtAsset(relativeTo, fileId, pathId, onlyGetInfo, forceFromCldb);
         }
 
+        public AssetTypeInstance GetTypeInstance(AssetsFileInstance inst, AssetFileInfoEx info, bool forceFromCldb = false)
+        {
+            return GetTypeInstance(inst.file, info, forceFromCldb);
+        }
+
+        public AssetTypeInstance GetTypeInstance(AssetsFile file, AssetFileInfoEx info, bool forceFromCldb = false)
+        {
+            return new AssetTypeInstance(GetTemplateBaseField(file, info, forceFromCldb), file.reader, info.absoluteFilePos);
+        }
+
+        //this method was renamed for consistency/clarity
+        //because it's used so much, I don't want to deprecate it right away
+        //so I'll keep the old method here for a while
         public AssetTypeInstance GetATI(AssetsFile file, AssetFileInfoEx info, bool forceFromCldb = false)
+        {
+            return GetTypeInstance(file, info, forceFromCldb);
+        }
+
+        public AssetTypeTemplateField GetTemplateBaseField(AssetsFile file, AssetFileInfoEx info, bool forceFromCldb = false)
         {
             ushort scriptIndex = AssetHelper.GetScriptIndex(file, info);
             uint fixedId = AssetHelper.FixAudioID(info.curFileType);
@@ -196,17 +215,10 @@ namespace AssetsTools.NET.Extra
                 baseField = new AssetTypeTemplateField();
                 if (hasTypeTree && !forceFromCldb)
                 {
-                    if (file.header.format < 0x10)
-                    {
-                        if (scriptIndex == 0xFFFF)
-                            baseField.From0D(AssetHelper.FindTypeTreeTypeByID(file.typeTree, fixedId), 0);
-                        else
-                            baseField.From0D(AssetHelper.FindTypeTreeTypeByScriptIndex(file.typeTree, scriptIndex), 0);
-                    }
-                    else
-                    {
+                    if (scriptIndex == 0xFFFF)
                         baseField.From0D(AssetHelper.FindTypeTreeTypeByID(file.typeTree, fixedId), 0);
-                    }
+                    else
+                        baseField.From0D(AssetHelper.FindTypeTreeTypeByScriptIndex(file.typeTree, scriptIndex), 0);
                 }
                 else
                 {
@@ -219,23 +231,61 @@ namespace AssetsTools.NET.Extra
                 }
             }
 
-            return new AssetTypeInstance(baseField, file.reader, info.absoluteFilePos);
+            return baseField;
         }
 
         public AssetTypeValueField GetMonoBaseFieldCached(AssetsFileInstance inst, AssetFileInfoEx info, string managedPath)
         {
+            //AssetsFile file = inst.file;
+            //ushort scriptIndex = AssetHelper.GetScriptIndex(file, info);
+            //if (scriptIndex != 0xFFFF && inst.templateFieldCache.ContainsKey(scriptIndex))
+            //{
+            //    AssetTypeTemplateField baseTemplateField = inst.templateFieldCache[scriptIndex];
+            //    AssetTypeInstance baseAti = new AssetTypeInstance(baseTemplateField, file.reader, info.absoluteFilePos);
+            //    return baseAti.GetBaseField();
+            //}
+            //else
+            //{
+            //    AssetTypeValueField baseValueField = MonoDeserializer.GetMonoBaseField(this, inst, info, managedPath);
+            //    inst.templateFieldCache[scriptIndex] = baseValueField.templateField;
+            //    return baseValueField;
+            //}
             AssetsFile file = inst.file;
             ushort scriptIndex = AssetHelper.GetScriptIndex(file, info);
-            if (scriptIndex != 0xFFFF && inst.templateFieldCache.ContainsKey(scriptIndex))
+            if (scriptIndex == 0xFFFF)
+                return null;
+
+            string scriptName;
+            if (!inst.monoIdToName.ContainsKey(scriptIndex))
             {
-                AssetTypeTemplateField baseTemplateField = inst.templateFieldCache[scriptIndex];
+                AssetTypeInstance scriptAti = GetExtAsset(inst, GetATI(inst.file, info).GetBaseField().Get("m_Script")).instance;
+                scriptName = scriptAti.GetBaseField().Get("m_Name").GetValue().AsString();
+                string scriptNamespace = scriptAti.GetBaseField().Get("m_Namespace").GetValue().AsString();
+                string assemblyName = scriptAti.GetBaseField().Get("m_AssemblyName").GetValue().AsString();
+
+                if (scriptNamespace != string.Empty)
+                {
+                    scriptNamespace = "-";
+                }
+
+                scriptName = $"{assemblyName}.{scriptNamespace}.{scriptName}";
+                inst.monoIdToName[scriptIndex] = scriptName;
+            }
+            else
+            {
+                scriptName = inst.monoIdToName[scriptIndex];
+            }
+
+            if (monoTemplateFieldCache.ContainsKey(scriptName))
+            {
+                AssetTypeTemplateField baseTemplateField = monoTemplateFieldCache[scriptName];
                 AssetTypeInstance baseAti = new AssetTypeInstance(baseTemplateField, file.reader, info.absoluteFilePos);
                 return baseAti.GetBaseField();
             }
             else
             {
                 AssetTypeValueField baseValueField = MonoDeserializer.GetMonoBaseField(this, inst, info, managedPath);
-                inst.templateFieldCache[scriptIndex] = baseValueField.templateField;
+                monoTemplateFieldCache[scriptName] = baseValueField.templateField;
                 return baseValueField;
             }
         }
@@ -246,10 +296,12 @@ namespace AssetsTools.NET.Extra
             classFile.Read(new AssetsFileReader(stream));
             return classFile;
         }
+
         public ClassDatabaseFile LoadClassDatabase(string path)
         {
             return LoadClassDatabase(new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read));
         }
+
         public ClassDatabaseFile LoadClassDatabaseFromPackage(string version, bool specific = false)
         {
             if (classPackage == null)

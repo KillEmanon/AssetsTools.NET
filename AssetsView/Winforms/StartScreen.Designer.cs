@@ -69,6 +69,8 @@
             this.viewTextureToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.propertiesToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.dataGridViewImageColumn1 = new System.Windows.Forms.DataGridViewImageColumn();
+            this.xRefsToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.pptrToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -174,7 +176,8 @@
             this.globalSearchInfoToolStripMenuItem,
             this.toolStripSeparator2,
             this.assetDataToolStripMenuItem,
-            this.monoBehaviourToolStripMenuItem});
+            this.monoBehaviourToolStripMenuItem,
+            this.pptrToolStripMenuItem});
             this.globalSearchToolStripMenuItem.Name = "globalSearchToolStripMenuItem";
             this.globalSearchToolStripMenuItem.Size = new System.Drawing.Size(101, 23);
             this.globalSearchToolStripMenuItem.Text = "Global Search";
@@ -423,6 +426,7 @@
             this.contextMenuStrip.ImageScalingSize = new System.Drawing.Size(24, 24);
             this.contextMenuStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.viewTextureToolStripMenuItem,
+            this.xRefsToolStripMenuItem,
             this.propertiesToolStripMenuItem});
             this.contextMenuStrip.Name = "contextMenuStrip";
             this.contextMenuStrip.Size = new System.Drawing.Size(151, 48);
@@ -452,6 +456,20 @@
             this.dataGridViewImageColumn1.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             this.dataGridViewImageColumn1.SortMode = System.Windows.Forms.DataGridViewColumnSortMode.Automatic;
             this.dataGridViewImageColumn1.Width = 30;
+            // 
+            // xRefsToolStripMenuItem
+            // 
+            this.xRefsToolStripMenuItem.Name = "xRefsToolStripMenuItem";
+            this.xRefsToolStripMenuItem.Size = new System.Drawing.Size(140, 22);
+            this.xRefsToolStripMenuItem.Text = "X-Refs";
+            this.xRefsToolStripMenuItem.Click += new System.EventHandler(this.xRefsToolStripMenuItem_Click);
+            // 
+            // pptrToolStripMenuItem
+            // 
+            this.pptrToolStripMenuItem.Name = "pptrToolStripMenuItem";
+            this.pptrToolStripMenuItem.Size = new System.Drawing.Size(287, 22);
+            this.pptrToolStripMenuItem.Text = "PPtr";
+            this.pptrToolStripMenuItem.Click += new System.EventHandler(this.pptrToolStripMenuItem_Click);
             // 
             // StartScreen
             // 
@@ -520,6 +538,8 @@
         private System.Windows.Forms.ToolStripMenuItem exportOneToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem importDirectoryToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem importFileToolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem xRefsToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem pptrToolStripMenuItem;
     }
 }
 
