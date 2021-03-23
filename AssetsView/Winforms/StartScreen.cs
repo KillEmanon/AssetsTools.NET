@@ -227,6 +227,8 @@ namespace AssetsView.Winforms
 
                         AssetExternal assetExt = helper.GetExtAsset(ggm, pointerField, true);
                         AssetFileInfoEx assetInfo = assetExt.info;
+                        if (assetInfo == null)
+                            continue;
                         ClassDatabaseType assetType = AssetHelper.FindAssetClassByID(helper.classFile, assetInfo.curFileType);
                         if (assetType == null)
                             continue;
@@ -497,27 +499,7 @@ namespace AssetsView.Winforms
                 XRefsDialog xrefs = new XRefsDialog(this, helper, assetDir, pptrMap, new AssetID(currentFile.name, pathId));
                 xrefs.Show();
             }
-        }
-
-        private void assetList_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
-        {
-            if (currentFile == null)
-                return;
-            if (assetList.SelectedCells.Count > 0)
-            {
-                var selRow = assetList.SelectedRows[0];
-                string typeName = (string)selRow.Cells[2].Value;
-                if (typeName == "Folder")
-                {
-                    string dirName = (string)selRow.Cells[1].Value;
-                    ChangeDirectory(dirName);
-                }
-                else
-                {
-                    OpenAsset((long)selRow.Cells[3].Value);
-                }
-            }
-        }
+        }         
 
         /// <summary>
         /// Emanon
@@ -568,6 +550,40 @@ namespace AssetsView.Winforms
             var repl = new AssetsReplacerFromMemory(0, inf.index, (int)inf.curFileType, 0xFFFF, newGoBytes);
             var writer = new AssetsFileWriter(File.OpenWrite("resources-modified.assets"));
             currentFile.file.Write(writer, 1, new AssetsReplacer[] { repl }.ToList(), 1);
+        }
+
+        private void assetList_CellDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (currentFile == null)
+                return;
+            if (assetList.SelectedCells.Count > 0)
+            {
+                var selRow = assetList.SelectedRows[0];
+                string typeName = (string)selRow.Cells[2].Value;
+                if (typeName == "Folder")
+                {
+                    string dirName = (string)selRow.Cells[1].Value;
+                    ChangeDirectory(dirName);
+                }
+                else
+                {
+                    OpenAsset((long)selRow.Cells[3].Value);
+                }
+            }
+        }
+
+        public static AssetTypeValueField GetRootTransform(AssetsManager helper, AssetsFileInstance currentFile, AssetTypeValueField transform)
+        {
+            AssetTypeValueField fatherPtr = transform["m_Father"];
+            if (fatherPtr["m_PathID"].GetValue().AsInt64() != 0)
+            {
+                AssetTypeValueField father = helper.GetExtAsset(currentFile, fatherPtr).instance.GetBaseField();
+                return GetRootTransform(helper, currentFile, father);
+            }
+            else
+            {
+                return transform;
+            }
         }
 
         public void OpenAsset(long id)

@@ -84,9 +84,9 @@ namespace AssetsTools.NET
                 get { return double.Parse(value.ToString()); }
                 set { this.value = value; }
             }
-            public byte[] asString
+            public string asString
             {
-                get { return (byte[])value; }
+                get { return value.ToString(); }
                 set { this.value = value; }
             }
         }
