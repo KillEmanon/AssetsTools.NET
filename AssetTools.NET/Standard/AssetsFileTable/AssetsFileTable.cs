@@ -14,6 +14,11 @@ namespace AssetsTools.NET
 
         //assets tools uses a binary search tree, but we'll just use a dictionary instead
         private Dictionary<long, int> lookupBase;
+
+        public Dictionary<long, int> GetLookupBase()
+        {
+            return lookupBase;
+        }
         
         public AssetsFileTable(AssetsFile file)
         {

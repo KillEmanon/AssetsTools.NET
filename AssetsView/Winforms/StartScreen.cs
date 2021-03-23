@@ -750,6 +750,7 @@ namespace AssetsView.Winforms
             UpdateFileList();
             currentFile = inst;
             LoadGeneric(inst, false);
+            IEManager.AssetsFileInstance = inst;
         }
 
         private string SelectFolderAndLoad()
@@ -792,11 +793,11 @@ namespace AssetsView.Winforms
         {
             var inst = IEManager.AssetsFileInstance;
 
-            for (long i = 1; i < inst.file.AssetCount + 1; i++)
+            foreach(var item in inst.table.GetLookupBase())
             {
-                string typeName = IEManager.GetTypeName(i);
-                if(typeName == "MonoBehaviour")
-                    ExportAssets(i);
+                string typeName = IEManager.GetTypeName(item.Key);
+                if (typeName == "MonoBehaviour")
+                    ExportAssets(item.Key);
             }
             MessageBox.Show("导出成功");
         }
