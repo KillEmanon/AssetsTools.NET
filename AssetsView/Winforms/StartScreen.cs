@@ -113,6 +113,7 @@ namespace AssetsView.Winforms
                 AssetBundleFile bundleFile = openFile.file;
                 BundleFileInstance bundleInst = openFile.inst;
                 List<byte[]> files = BundleHelper.LoadAllAssetsDataFromBundle(bundleFile);
+                string rootPath = Path.GetDirectoryName(openFile.inst.path);
                 if (files.Count > 0)
                 {
                     if (files.Count > 1)
@@ -121,13 +122,13 @@ namespace AssetsView.Winforms
                         {
                             MemoryStream stream = new MemoryStream(files[i]);
                             string name = bundleFile.bundleInf6.dirInf[i].name;
-                            AssetsFileInstance inst = helper.LoadAssetsFile(stream, name, openFile.selection == 1);
+                            AssetsFileInstance inst = helper.LoadAssetsFile(stream, name, openFile.selection == 1, rootPath);
                             inst.parentBundle = bundleInst;
                         }
                     }
                     MemoryStream mainStream = new MemoryStream(files[0]);
                     string mainName = bundleFile.bundleInf6.dirInf[0].name;
-                    AssetsFileInstance mainInst = helper.LoadAssetsFile(mainStream, mainName, openFile.selection == 1);
+                    AssetsFileInstance mainInst = helper.LoadAssetsFile(mainStream, mainName, openFile.selection == 1, rootPath);
                     mainInst.parentBundle = bundleInst;
                     LoadMainAssetsFile(mainInst);
                 }

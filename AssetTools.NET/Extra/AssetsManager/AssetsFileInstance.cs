@@ -21,8 +21,17 @@ namespace AssetsTools.NET.Extra
         public AssetsFileInstance(Stream stream, string filePath, string root)
         {
             this.stream = stream;
-            path = Path.GetFullPath(filePath);
-            name = Path.Combine(root, Path.GetFileName(path));
+            if (string.IsNullOrEmpty(root))
+            {
+                path = Path.GetFullPath(filePath);
+                name = Path.Combine(root, Path.GetFileName(path));
+            }
+            else
+            {
+                path = Path.Combine(root, Path.GetFileName(filePath));
+                name = filePath;
+            }
+
             file = new AssetsFile(new AssetsFileReader(stream));
             table = new AssetsFileTable(file);
             dependencies.AddRange(
