@@ -90,12 +90,12 @@ namespace AssetsView.Winforms
                 if (possibleBundleHeader == "UnityFS")
                 {
                     LoadBundleFile(ofd.FileName);
-                    IEManager.Init(helper, currentFile, ofd.FileName);
+                    IEManager.Init(helper, currentFile, ofd.FileName, true);
                 }
                 else if (possibleFormat < 0xFF && emptyVersion == "")
                 {
                     LoadAssetsFile(ofd.FileName);
-                    IEManager.Init(helper, currentFile, ofd.FileName);
+                    IEManager.Init(helper, currentFile, ofd.FileName, false);
                 }
                 else
                 {

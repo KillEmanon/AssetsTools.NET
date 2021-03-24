@@ -21,12 +21,15 @@ namespace AssetsView.AssetHelpers
         private static string assetsFileName;
         private static string inputStr;
 
-        public static void Init(AssetsManager assetsManager, AssetsFileInstance assetsFileInstance, string path)
+        private static bool isBundle;
+
+        public static void Init(AssetsManager assetsManager, AssetsFileInstance assetsFileInstance, string path, bool isBundle)
         {
             IEManager.assetsManager = assetsManager;
             IEManager.assetsFileInstance = assetsFileInstance;
             dirctoryPath = Path.GetDirectoryName(path);
             assetsFileName = Path.GetFileNameWithoutExtension(path);
+            IEManager.isBundle = isBundle;
         }
 
         public static AssetTypeValueField GetField(long id)
@@ -60,7 +63,7 @@ namespace AssetsView.AssetHelpers
             {
                 if (AssetUtils.AllDependenciesLoaded(helper, correctAti))
                 {
-                    className += $"--{GetClassName(helper, correctAti, targetBaseField)}--{targetBaseField[3].value.value.asString.ToString().TrimEnd('\0')}--";
+                    className += $"--{GetClassName(helper, correctAti, targetBaseField)}--{targetBaseField[3].value.AsString().TrimEnd('\0')}--";
                     string managedPath = Path.Combine(Path.GetDirectoryName(correctAti.path), "Managed");
                     if (Directory.Exists(managedPath))
                     {
@@ -110,6 +113,7 @@ namespace AssetsView.AssetHelpers
         public static string DirctoryPath { get => dirctoryPath; set => dirctoryPath = value; }
         public static string AssetsFileName { get => assetsFileName; set => assetsFileName = value; }
         public static string InputStr { get => inputStr; set => inputStr = value; }
+        public static bool IsBundle { get => isBundle; set => isBundle = value; }
 
         private static string GetClassName(AssetsManager manager, AssetsFileInstance inst, AssetTypeValueField baseField)
         {

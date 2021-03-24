@@ -18,14 +18,17 @@ namespace AssetsView.Util
     {
 		static string logPath;
 
+		/// <summary>
+		/// 导入一整个目录的资源文件
+		/// </summary>
+		/// <param name="directoryPath"></param>
+		/// <param name="targetFileName"></param>
 		public static void ImportAssets(string directoryPath, string targetFileName)
 		{
 			if (Directory.Exists(directoryPath))
 			{
 				var files = Directory.GetFiles(directoryPath);
 				var replList = new List<AssetsReplacer>();
-				//var str = IEManager.InputStr;
-				//var arr = str.Split('-');
 
 				//清空LOG文件
 				logPath = Path.GetFileNameWithoutExtension(targetFileName) + ".txt";
@@ -52,10 +55,36 @@ namespace AssetsView.Util
 
 				var inst = IEManager.AssetsFileInstance;
 				var writer = new AssetsFileWriter(File.OpenWrite(targetFileName));
-				//var writer = new AssetsFileWriter(File.OpenWrite(@"E:\AndroidStudioProject\Slime\Slime\src\main\assets\bin\Data\sharedassets0.assets")); 
-				inst.file.Write(writer, 0, replList, 0);
+				//Bundle和普通的分离操作
+				if (IEManager.IsBundle)
+				{
+					AssetBundleFile abFile = inst.parentBundle.file;
+					var index = FindAssetsIDInBundle(inst, abFile);
+					BundleReplacerFromAssets brfa = new BundleReplacerFromAssets(Path.GetFileName(inst.path), null, inst.file, replList, index);
+					List<BundleReplacer> bRepList = new List<BundleReplacer>();
+					bRepList.Add(brfa);
+					abFile.Write(writer, bRepList);
+				}
+				else
+				{
+					inst.file.Write(writer, 0, replList, 0);
+				}
+				
 				writer.Close();
 			}
+		}
+
+		public static uint FindAssetsIDInBundle(AssetsFileInstance inst, AssetBundleFile abFile)
+		{
+			for (uint i = 0; i < abFile.bundleInf6.dirInf.Length; i++)
+			{
+				if (inst.name == abFile.bundleInf6.dirInf[i].name)
+				{
+					return i;
+				}
+			}
+
+			throw new Exception("找不到AssetsFile在AB包中的index");
 		}
 
 		public static void ImportAssets(long path_id, string filedFileName, string targetFileName)
