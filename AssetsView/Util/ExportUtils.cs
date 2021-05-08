@@ -28,6 +28,11 @@ namespace AssetsView.Util
                 if (field[i].childrenCount >= 1)
                 {
                     header += " ";
+
+                    //追加信息
+                    sb.Append(" ");
+                    sb.Append(field[i].templateField.align);
+
                     stringBuilder.AppendLine(sb.ToString());
                     DumpField(field[i], ref stringBuilder, header);
                     header = header.Substring(1, header.Length - 1);
@@ -51,6 +56,10 @@ namespace AssetsView.Util
                     }
                     else
                         Console.WriteLine($"这就离谱:{id}");
+
+                    //追加信息
+                    sb.Append(" ");
+                    sb.Append(field[i].templateField.align);
 
                     stringBuilder.AppendLine(sb.ToString());
                 }
@@ -84,6 +93,19 @@ namespace AssetsView.Util
             WriteDumpFiles(className + id + ".txt", path, content);
         }
 
-   
+        public static void ExportAssetsByJson(long id)
+        {
+            ExportUtils.id = id;
+            string path = IEManager.DirctoryPath;
+            string className;
+            var targetBaseField = IEManager.GetField(id, out className);
+            if (targetBaseField == null) return;
+
+            string content = IEManager.SerializeObject(targetBaseField);
+
+            WriteDumpFiles(className + id + ".txt", path, content);
+        }
+
+
     }
 }

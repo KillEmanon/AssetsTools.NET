@@ -49,8 +49,10 @@ namespace AssetsView.Util
 					else
 						name = splitArr[3];
 
-					var temp = GenReplacerFromMemory(long.Parse(name), files[i]);
-					if(temp != null) replList.Add(temp);
+					var temp = GenReplacerFromMemory(long.Parse(name), files[i], splitArr);
+					//var temp = GenReplacerFromMemoryByJson(long.Parse(name), files[i]);
+
+					if (temp != null) replList.Add(temp);
 				}
 
 				var inst = IEManager.AssetsFileInstance;
@@ -87,16 +89,34 @@ namespace AssetsView.Util
 			throw new Exception("找不到AssetsFile在AB包中的index");
 		}
 
+		//TODO 暂时用于功能测试
 		public static void ImportAssets(long path_id, string filedFileName, string targetFileName)
 		{
-			var inst = IEManager.AssetsFileInstance;
-			var repl = GenReplacerFromMemory(path_id, filedFileName);
-			var writer = new AssetsFileWriter(File.OpenWrite(targetFileName));
-			inst.file.Write(writer, 0, new AssetsReplacer[] { repl }.ToList(), 0);
-			writer.Close();
+			//TextureFile.GetTextureDataFromBytes
+
+			//var inst = IEManager.AssetsFileInstance;
+			//var repl = GenReplacerFromMemory(path_id, filedFileName);
+			//var writer = new AssetsFileWriter(File.OpenWrite(targetFileName));
+			//inst.file.Write(writer, 0, new AssetsReplacer[] { repl }.ToList(), 0);
+			//writer.Close();
 		}
 
-		public static AssetsReplacerFromMemory GenReplacerFromMemory(long path_id, string filedFileName)
+		public static AssetsReplacerFromMemory GenReplacerFromMemoryByJson(long path_id, string filedFileName)
+		{
+			UTF8Encoding utf8 = new UTF8Encoding(false);
+			string content = File.ReadAllText(filedFileName, utf8);
+
+			AssetTypeValueField baseField = IEManager.DeserializeObject(content);
+
+			var inst = IEManager.AssetsFileInstance;
+			var inf = inst.table.GetAssetInfo(path_id);
+			var newGoBytes = baseField.WriteToByteArray();
+			ushort monoId = inst.file.typeTree.unity5Types[inf.curFileTypeOrIndex].scriptIndex;
+
+			return new AssetsReplacerFromMemory(0, path_id, (int)inf.curFileType, monoId, newGoBytes);
+		}
+
+		public static AssetsReplacerFromMemory GenReplacerFromMemory(long path_id, string filedFileName, string[] splitArr)
 		{
 			AssetTypeValueField baseField;
 
@@ -121,28 +141,35 @@ namespace AssetsView.Util
 				return null;
 			}
 
-			var sucess = ChangeField(baseField, contents, ref lines);
-			if (!sucess)
+			var baseField_new = baseField;
+			//试试无中生有
+			if (splitArr[0] == "MonoBehaviour")
 			{
-				Console.WriteLine($"处理失败,有null值--{path_id}--{filedFileName}");
-				File.AppendAllLines(logPath, new string[] { $"处理失败,有null值--{path_id}--{filedFileName}" });
-				return null;
+				lines = 0;
+				int count = CalculationChildrenCount(contents, -1, -1);
+				baseField_new = IEManager.InitMonoAssetTypeValueField(count);
+				CreateField(baseField_new, contents, ref lines, count);
+			}
+			else
+			{
+				var sucess = ChangeField(baseField_new, contents, ref lines);
+				if (!sucess)
+				{
+					Console.WriteLine($"处理失败,有null值--{path_id}--{filedFileName}");
+					File.AppendAllLines(logPath, new string[] { $"处理失败,有null值--{path_id}--{filedFileName}" });
+					return null;
+				}
 			}
 
-			////试试无中生有
-			//int lines = 0;
-			//int count = CalculationChildrenCount(contents, -1, -1);
-			//baseField = new AssetTypeValueField();
-			//baseField.children = new AssetTypeValueField[count];
-			//baseField.childrenCount = count;
-			//baseField.templateField = new AssetTypeTemplateField();
-			//baseField.templateField.children = new AssetTypeTemplateField[count];
-			//baseField.templateField.childrenCount = count;
-			//CreateField(baseField, contents, ref lines, count);
+			string content1 = IEManager.SerializeObject(baseField);
+			string content2 = IEManager.SerializeObject(baseField_new);
+
+			File.WriteAllText("mono/origin_" + path_id + ".json", content1);
+			File.WriteAllText("mono/datachange_" + path_id + ".json", content2);
 
 			var inst = IEManager.AssetsFileInstance;
 			var inf = inst.table.GetAssetInfo(path_id);
-			var newGoBytes = baseField.WriteToByteArray();
+			var newGoBytes = baseField_new.WriteToByteArray();
 			ushort monoId = inst.file.typeTree.unity5Types[inf.curFileTypeOrIndex].scriptIndex;
 
 			return new AssetsReplacerFromMemory(0, path_id, (int)inf.curFileType, monoId, newGoBytes);
@@ -161,6 +188,9 @@ namespace AssetsView.Util
 
 				field[i].templateField.type = fieldStr[0];
 				field[i].templateField.name = fieldStr[1];
+
+				if(fieldStr.Length >= 5)
+					field[i].templateField.align = fieldStr[4] == "true";
 
 				if (field[i].childrenCount >= 1)
                 {
@@ -185,7 +215,7 @@ namespace AssetsView.Util
         }
 
 		/// <summary>
-		/// 无中生有一个Field
+		/// 无中生有一个Field(解析yaml生成一个新的Field)
 		/// </summary>
 		/// <param name="field"></param>
 		/// <param name="contents"></param>
@@ -215,10 +245,19 @@ namespace AssetsView.Util
 				tempField.name = fieldStr[1];
 				tempField.isArray = isArray;
 				tempField.valueType = AssetTypeValueField.GetValueTypeByTypeName(fieldStr[0]);
-				tempField.align = false;
 				tempField.hasValue = hasValue;
 
-				if (isArray)
+				if (hasSub)
+				{
+					tempField.align = fieldStr.Length >= 3 ? fieldStr[2] == "True" : false;
+				}
+				else
+				{
+					tempField.align = fieldStr.Length >= 5 ? fieldStr[4] == "True" : false;
+				}
+
+				//空数组的特殊处理
+				if (isArray && !hasSub)
 				{
 					tempField.children = new AssetTypeTemplateField[2];
 					tempField.childrenCount = 2;
@@ -246,7 +285,8 @@ namespace AssetsView.Util
 				}
 				else if (!hasSub)
 				{
-					newField.value = new AssetTypeValue(tempField.valueType, fieldStr[3]);
+					var value = fieldStr.Length >= 4 ? fieldStr[3] : null;
+					newField.value = new AssetTypeValue(tempField.valueType, value);
 				}
 				else
 				{
@@ -261,14 +301,17 @@ namespace AssetsView.Util
 					CreateField(newField, contents, ref lines, subCount);
 				}
 
-				//补充信息给父节点
+				//补充实例信息给父节点
 				field.children[i] = newField;
 
-				//数组的模板类有特殊处理
-				if (field.templateField.isArray && i == 0)
-					field.templateField.children[1] = tempField;
-				else
-					field.templateField.children[i] = tempField;
+				//补充模板信息给父节点
+				field.templateField.children[i] = tempField;
+
+				////数组的模板类有特殊处理
+				//if (field.templateField.isArray && i == 0)
+				//	field.templateField.children[1] = tempField;
+				//else
+				//	field.templateField.children[i] = tempField;
 			}
 		}
 
@@ -286,12 +329,25 @@ namespace AssetsView.Util
 				fieldStr[0] = $"{fieldStr[0]} {fieldStr[1]}";
 				fieldStr[1] = fieldStr[2];
 				fieldStr[3] = fieldStr[4];
+				if (fieldStr.Length > 4)
+					fieldStr[4] = fieldStr[5];
 			}
 
 			//字符串的特殊处理,还原
 			if (fieldStr[0] == "string")
 			{
 				string replace = fieldStr[0] + " " + fieldStr[1] + " = ";
+
+				//去除额外的Align参数
+				if (lineStr.EndsWith("True"))
+				{
+					lineStr = lineStr.Substring(0, lineStr.Length - 5);
+				}
+				else
+				{
+					lineStr = lineStr.Substring(0, lineStr.Length - 6);
+				}
+
 				fieldStr[3] = lineStr.Replace(replace, "").Trim().Replace("\"", "").Replace("\\n", "\n");
 			}
 			//bool的特殊处理

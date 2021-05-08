@@ -16,7 +16,12 @@ namespace AssetsTools.NET
 
             public AssetTypeArray asArray
             {
-                get { return (AssetTypeArray)value; }
+                get {
+                    if (value is AssetTypeArray)
+                        return (AssetTypeArray)value;
+                    else
+                        return new AssetTypeArray();
+                }
                 set { this.value = value; }
             }
 
@@ -86,7 +91,15 @@ namespace AssetsTools.NET
             }
             public byte[] asString
             {
-                get { return (byte[])value; }
+                get {
+                    if (value is byte[]) {
+                        return (byte[])value;
+                    }
+                    else
+                    {
+                        return Convert.FromBase64String((string)value);
+                    }
+                }
                 set { this.value = value; }
             }
         }

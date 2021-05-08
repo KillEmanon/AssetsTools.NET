@@ -80,6 +80,10 @@ namespace AssetsTools.NET.Extra
                 {
                     files.Add(LoadAssetDataFromBundle(bundle, i));
                 }
+                else
+                {
+                    files.Add(null);
+                }
             }
             return files;
         }

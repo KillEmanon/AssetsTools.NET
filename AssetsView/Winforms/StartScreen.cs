@@ -116,9 +116,16 @@ namespace AssetsView.Winforms
                 string rootPath = Path.GetDirectoryName(openFile.inst.path);
                 if (files.Count > 0)
                 {
-                    if (files.Count > 1)
+                    int mainIndex = -1;
+                    for (int i = 0; i < files.Count; i++)
                     {
-                        for (int i = 1; i < files.Count; i++)
+                        if (files[i] == null) continue;
+
+                        if (mainIndex == -1)
+                        {
+                            mainIndex = i;
+                        }
+                        else
                         {
                             MemoryStream stream = new MemoryStream(files[i]);
                             string name = bundleFile.bundleInf6.dirInf[i].name;
@@ -126,11 +133,34 @@ namespace AssetsView.Winforms
                             inst.parentBundle = bundleInst;
                         }
                     }
-                    MemoryStream mainStream = new MemoryStream(files[0]);
-                    string mainName = bundleFile.bundleInf6.dirInf[0].name;
+
+                    //if (files.Count > 1)
+                    //{
+                    //    for (int i = 1; i < files.Count; i++)
+                    //    {
+                    //        MemoryStream stream = new MemoryStream(files[i]);
+                    //        string name = bundleFile.bundleInf6.dirInf[i].name;
+                    //        AssetsFileInstance inst = helper.LoadAssetsFile(stream, name, openFile.selection == 1, rootPath);
+                    //        inst.parentBundle = bundleInst;
+                    //    }
+                    //}
+                    //MemoryStream mainStream = new MemoryStream(files[0]);
+                    //string mainName = bundleFile.bundleInf6.dirInf[0].name;
+                    //AssetsFileInstance mainInst = helper.LoadAssetsFile(mainStream, mainName, openFile.selection == 1, rootPath);
+                    //mainInst.parentBundle = bundleInst;
+
+                    MemoryStream mainStream = new MemoryStream(files[mainIndex]);
+                    string mainName = bundleFile.bundleInf6.dirInf[mainIndex].name;
                     AssetsFileInstance mainInst = helper.LoadAssetsFile(mainStream, mainName, openFile.selection == 1, rootPath);
                     mainInst.parentBundle = bundleInst;
+
                     LoadMainAssetsFile(mainInst);
+
+                    if(openFile.selection == 1)
+                    {
+                        helper.LoadAssetsFile(currentFile.stream, currentFile.path, true);
+                        UpdateDependencies();
+                    }
                 }
                 else
                 {
@@ -530,7 +560,7 @@ namespace AssetsView.Winforms
             try
             {
                 ExportUtils.ExportAssets(id);
-
+                //ExportUtils.ExportAssetsByJson(id);
             }
             catch (Exception e)
             {
@@ -793,6 +823,12 @@ namespace AssetsView.Winforms
         {
             var inst = IEManager.AssetsFileInstance;
 
+            if(!AssetUtils.AllDependenciesLoaded(helper, currentFile))
+            {
+                MessageBox.Show("未加载依赖文件");
+                return;
+            }
+
             foreach(var item in inst.table.GetLookupBase())
             {
                 string typeName = IEManager.GetTypeName(item.Key);
@@ -838,6 +874,12 @@ namespace AssetsView.Winforms
         /// <param name="e"></param>
         private void imporDirectoryToolStripMenuItem_Click(object sender, EventArgs e)
         {
+            if (!AssetUtils.AllDependenciesLoaded(helper, currentFile))
+            {
+                MessageBox.Show("未加载依赖文件");
+                return;
+            }
+
             IEManager.InputStr = fileIDTextBox.Text;
             OpenFileDialog ofd = new OpenFileDialog();
             ofd.Title = "选择要覆盖的Aseets";

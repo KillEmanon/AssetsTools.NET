@@ -2,6 +2,7 @@
 using AssetsTools.NET.Extra;
 using AssetsView.Util;
 using AssetsView.Winforms;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -88,7 +89,12 @@ namespace AssetsView.AssetHelpers
             AssetsManager helper = AssetsManager;
             AssetsFileInstance correctAti = AssetsFileInstance;
             AssetFileInfoEx info = correctAti.table.GetAssetInfo(id);
-            return AssetHelper.FindAssetClassByID(helper.classFile, info.curFileType).name.GetString(helper.classFile);
+            var assetClass = AssetHelper.FindAssetClassByID(helper.classFile, info.curFileType);
+
+            if (assetClass != null)
+                return assetClass.name.GetString(helper.classFile);
+            else
+                return "";
         }
 
         /// <summary>
@@ -118,7 +124,38 @@ namespace AssetsView.AssetHelpers
         private static string GetClassName(AssetsManager manager, AssetsFileInstance inst, AssetTypeValueField baseField)
         {
             AssetTypeInstance scriptAti = manager.GetExtAsset(inst, baseField.Get("m_Script")).instance;
-            return scriptAti.GetBaseField().Get("m_Name").GetValue().AsString();
+
+            if (scriptAti == null)
+                return "";
+            else
+                return scriptAti.GetBaseField().Get("m_Name").GetValue().AsString();
         }
+
+        public static string SerializeObject(AssetTypeValueField atvf)
+        {
+            string json = JsonConvert.SerializeObject(atvf);
+            return json;
+        }
+
+        public static AssetTypeValueField DeserializeObject(string json)
+        {
+            AssetTypeValueField atvf = JsonConvert.DeserializeObject<AssetTypeValueField>(json);
+            return atvf;
+        }
+
+        public static AssetTypeValueField InitMonoAssetTypeValueField(int count)
+        {
+            AssetTypeValueField baseField = new AssetTypeValueField();
+            baseField.children = new AssetTypeValueField[count];
+            baseField.childrenCount = count;
+            baseField.templateField = new AssetTypeTemplateField();
+            baseField.templateField.children = new AssetTypeTemplateField[count];
+            baseField.templateField.childrenCount = count;
+            baseField.templateField.name = "Base";
+            baseField.templateField.type = "MonoBehaviour";
+
+            return baseField;
+        }
+
     }
 }

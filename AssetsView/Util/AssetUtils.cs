@@ -9,24 +9,24 @@ namespace AssetsView.Util
     {
         public static bool AllDependenciesLoaded(AssetsManager am, AssetsFileInstance afi)
         {
-            return true;
-            //foreach (AssetsFileDependency dep in afi.file.dependencies.dependencies)
-            //{
-            //    string absAssetPath = dep.assetPath;
-            //    if (absAssetPath.StartsWith("archive:/"))
-            //    {
-            //        return false; //todo
-            //    }
-            //    if (!Path.IsPathRooted(absAssetPath))
-            //    {
-            //        absAssetPath = Path.Combine(Path.GetDirectoryName(afi.path), dep.assetPath);
-            //    }
-            //    if (!am.files.Any(d => d != null && Path.GetFileName(d.path).ToLower() == Path.GetFileName(absAssetPath).ToLower()))
-            //    {
-            //        return false;
-            //    }
-            //}
             //return true;
+            foreach (AssetsFileDependency dep in afi.file.dependencies.dependencies)
+            {
+                string absAssetPath = dep.assetPath;
+                if (absAssetPath.StartsWith("archive:/"))
+                {
+                    return false; //todo
+                }
+                if (!Path.IsPathRooted(absAssetPath))
+                {
+                    absAssetPath = Path.Combine(Path.GetDirectoryName(afi.path), dep.assetPath);
+                }
+                if (!am.files.Any(d => d != null && Path.GetFileName(d.path).ToLower() == Path.GetFileName(absAssetPath).ToLower()))
+                {
+                    return false;
+                }
+            }
+            return true;
         }
 
         //used as sort of a hack to handle both second and component
